@@ -1,0 +1,13 @@
+{
+  "name": "claude-deck",
+  "version": "1.0.0",
+  "description": "A local dashboard for Claude Code — daily report, one-click skills and automations, and a searchable session log.",
+  "license": "MIT",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js --open"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

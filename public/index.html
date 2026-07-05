@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Deck</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">🛰️</span>
+      <div>
+        <div class="brand-name">Claude Deck</div>
+        <div class="brand-sub">your Claude Code cockpit</div>
+      </div>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-view="today">☀️ Today</button>
+      <button class="nav-btn" data-view="automations">⚡ Automations</button>
+      <button class="nav-btn" data-view="skills">🧰 Skills</button>
+      <button class="nav-btn" data-view="sessions">🗂️ Sessions</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div id="runs-badge" class="runs-badge hidden"></div>
+      <div class="foot-note">Everything runs on this Mac.<br>Nothing leaves your machine.</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ============ TODAY ============ -->
+    <section id="view-today" class="view">
+      <header class="view-head">
+        <div>
+          <h1 id="today-title">Today</h1>
+          <p class="muted" id="today-sub"></p>
+        </div>
+        <div class="head-actions">
+          <input type="date" id="report-date" class="date-input">
+          <button class="btn btn-primary" id="btn-narrative">📝 Write my daily report</button>
+        </div>
+      </header>
+
+      <div class="stat-row" id="stat-row">
+        <div class="stat-tile"><div class="stat-value" id="st-sessions">–</div><div class="stat-label">Sessions</div></div>
+        <div class="stat-tile"><div class="stat-value" id="st-projects">–</div><div class="stat-label">Projects touched</div></div>
+        <div class="stat-tile"><div class="stat-value" id="st-prompts">–</div><div class="stat-label">Requests made</div></div>
+        <div class="stat-tile"><div class="stat-value" id="st-tools">–</div><div class="stat-label">Actions taken</div></div>
+        <div class="stat-tile"><div class="stat-value" id="st-hours">–</div><div class="stat-label">Active window</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Activity — last 14 days <span class="muted small">(sessions per day)</span></div>
+        <div class="chart-wrap">
+          <div id="activity-chart" class="activity-chart" role="img" aria-label="Bar chart of Claude Code sessions per day for the last 14 days"></div>
+          <div id="chart-tooltip" class="chart-tooltip hidden"></div>
+        </div>
+      </div>
+
+      <div id="narrative-card" class="card hidden">
+        <div class="card-title">Daily report <span id="narrative-status" class="pill pill-running">writing…</span></div>
+        <pre id="narrative-out" class="narrative"></pre>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-title">Projects worked on</div>
+          <ul id="today-projects" class="plain-list"></ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Skills used</div>
+          <ul id="today-skills" class="plain-list"></ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Sessions this day</div>
+        <div id="today-sessions" class="session-list"></div>
+      </div>
+    </section>
+
+    <!-- ============ AUTOMATIONS ============ -->
+    <section id="view-automations" class="view hidden">
+      <header class="view-head">
+        <div>
+          <h1>Automations</h1>
+          <p class="muted">One click runs Claude Code for you. Watch progress live below.</p>
+        </div>
+        <button class="btn" id="btn-add-automation">＋ New automation</button>
+      </header>
+
+      <div id="automation-form" class="card hidden">
+        <div class="card-title">New automation</div>
+        <div class="form-grid">
+          <label>Name <input id="af-name" placeholder="e.g. Update the changelog"></label>
+          <label>Emoji <input id="af-emoji" placeholder="⚡" maxlength="4"></label>
+          <label class="span2">What should Claude do? <textarea id="af-prompt" rows="3" placeholder="Plain English instructions, or a /skill command"></textarea></label>
+          <label>Run in project <select id="af-cwd"></select></label>
+          <label>Permissions <select id="af-mode">
+            <option value="default">Safe (read-mostly)</option>
+            <option value="acceptEdits">Allow file edits</option>
+            <option value="bypassPermissions">Full access (careful!)</option>
+          </select></label>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" id="af-save">Save automation</button>
+          <button class="btn" id="af-cancel">Cancel</button>
+        </div>
+      </div>
+
+      <div id="automation-grid" class="button-grid"></div>
+
+      <div class="card">
+        <div class="card-title">Run history <span class="muted small">this app session</span></div>
+        <div id="runs-list" class="runs-list"><p class="muted">Nothing has run yet. Click a button above to start.</p></div>
+      </div>
+
+      <div id="run-output-card" class="card hidden">
+        <div class="card-title"><span id="run-output-title">Output</span>
+          <span id="run-output-status" class="pill"></span>
+          <button class="btn btn-small" id="btn-stop-run">Stop</button>
+        </div>
+        <pre id="run-output" class="run-output"></pre>
+      </div>
+    </section>
+
+    <!-- ============ SKILLS ============ -->
+    <section id="view-skills" class="view hidden">
+      <header class="view-head">
+        <div>
+          <h1>Skills</h1>
+          <p class="muted">Every installed skill, runnable with one click. Pick a project, then click a skill.</p>
+        </div>
+        <div class="head-actions">
+          <select id="skill-project" class="date-input"></select>
+          <input id="skill-search" class="date-input" placeholder="Search skills…">
+        </div>
+      </header>
+
+      <div class="card" id="usage-card">
+        <div class="card-title">Your real usage <span class="muted small" id="usage-sub"></span></div>
+        <div id="usage-top" class="usage-top"></div>
+        <button class="link-btn" id="toggle-unused">Show 0 skills you've never used ▾</button>
+        <div id="usage-unused" class="unused-chips hidden"></div>
+      </div>
+
+      <div id="skills-grid" class="button-grid"></div>
+    </section>
+
+    <!-- ============ SESSIONS ============ -->
+    <section id="view-sessions" class="view hidden">
+      <header class="view-head">
+        <div>
+          <h1>Session log</h1>
+          <p class="muted" id="sessions-count"></p>
+        </div>
+        <div class="head-actions">
+          <select id="session-project" class="date-input"><option value="">All projects</option></select>
+          <input id="session-search" class="date-input" placeholder="Search sessions…">
+        </div>
+      </header>
+      <div id="sessions-table" class="session-list"></div>
+    </section>
+
+    <!-- ============ TRANSCRIPT (overlay) ============ -->
+    <section id="view-transcript" class="view hidden">
+      <header class="view-head">
+        <div>
+          <button class="btn" id="btn-back">← Back to sessions</button>
+        </div>
+      </header>
+      <div class="card">
+        <div class="card-title" id="transcript-title"></div>
+        <p class="muted small" id="transcript-meta"></p>
+        <div id="transcript" class="transcript"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="modal-backdrop" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-ok">Continue</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
