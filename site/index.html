@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Claude Deck — a local dashboard for Claude Code</title>
+<meta name="description" content="A local dashboard for Claude Code: daily report, one-click skills and automations, and a searchable session log. Real data, runs on your own machine.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛰️</text></svg>">
+<style>
+  :root {
+    --bg: #f4f3f0; --surface: #fcfcfb; --surface-2: #efeeea; --border: #e2e0da;
+    --text: #0b0b0b; --text-2: #52514e; --text-3: #8a8983;
+    --accent: #c96442; --accent-ink: #ffffff; --series: #2a78d6;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121211; --surface: #1a1a19; --surface-2: #232322; --border: #33332f;
+      --text: #ffffff; --text-2: #c3c2b7; --text-3: #8a8983;
+      --accent: #d97757; --accent-ink: #16130f; --series: #3987e5;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 64px 24px 100px; }
+  .eyebrow { color: var(--accent); font-weight: 700; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: 40px; letter-spacing: -.03em; margin: 12px 0 14px; line-height: 1.15; }
+  .lede { font-size: 18px; color: var(--text-2); max-width: 620px; }
+  .cta-row { display: flex; gap: 10px; margin-top: 26px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 11px 20px; border-radius: 10px;
+    text-decoration: none; font-weight: 600; font-size: 14.5px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+  }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  section { margin-top: 64px; }
+  h2 { font-size: 22px; letter-spacing: -.02em; margin-bottom: 6px; }
+  .section-sub { color: var(--text-2); margin-bottom: 20px; font-size: 15px; }
+  .shot {
+    width: 100%; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow);
+    display: block; margin-bottom: 14px;
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: 1fr; } h1 { font-size: 30px; } }
+  .feature-list { list-style: none; display: grid; gap: 10px; margin-top: 4px; }
+  .feature-list li { display: flex; gap: 10px; font-size: 15px; }
+  .feature-list b { min-width: 130px; flex-shrink: 0; }
+  .callout {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px 22px; box-shadow: var(--shadow); font-size: 14.5px; color: var(--text-2);
+  }
+  .callout b { color: var(--text); }
+  footer { margin-top: 70px; color: var(--text-3); font-size: 13px; }
+  code { background: var(--surface-2); padding: 2px 6px; border-radius: 5px; font-size: 13px; }
+  pre {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px;
+    overflow-x: auto; font-size: 13.5px; margin-top: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow">Claude Deck</div>
+  <h1>A local dashboard for Claude Code.</h1>
+  <p class="lede">Your daily report, every installed skill as a one-click button, and a
+  searchable log of every session — reading your real <code>~/.claude</code> data.
+  Built for teammates who never touch a terminal.</p>
+
+  <div class="cta-row">
+    <a class="btn btn-primary" href="https://github.com/reetbatra/claude-deck">View on GitHub →</a>
+    <a class="btn" href="https://github.com/reetbatra/claude-deck#start-it">Run it locally</a>
+  </div>
+
+  <section>
+    <h2>Today</h2>
+    <p class="section-sub">Stat tiles, a 14-day activity chart, and a one-click AI-written daily report — all from real session data.</p>
+    <img class="shot" src="img/today.png" alt="Claude Deck Today view: stat tiles, 14-day activity chart, projects and skills used">
+  </section>
+
+  <section>
+    <h2>Automations &amp; Skills</h2>
+    <p class="section-sub">Every installed skill as a runnable button — plus a real usage panel showing what you actually use.</p>
+    <div class="grid2">
+      <img class="shot" src="img/automations.png" alt="Automations tab with one-click run buttons">
+      <img class="shot" src="img/skills.png" alt="Skills tab with real usage stats and a full skill grid">
+    </div>
+  </section>
+
+  <section>
+    <h2>Session log</h2>
+    <p class="section-sub">Every Claude Code session across every project, searchable, with full readable transcripts.</p>
+    <img class="shot" src="img/sessions.png" alt="Searchable session log across projects">
+  </section>
+
+  <section>
+    <h2>How it works</h2>
+    <ul class="feature-list">
+      <li><b>Zero dependencies</b><span>Node 18+ built-ins only — no <code>npm install</code>.</span></li>
+      <li><b>Reads, never writes</b><span><code>~/.claude/projects/*.jsonl</code> transcripts and <code>~/.claude/skills</code>.</span></li>
+      <li><b>Runs Claude for you</b><span>One-click buttons spawn <code>claude -p</code> headlessly and stream output live.</span></li>
+      <li><b>Localhost only</b><span>Binds to <code>127.0.0.1</code>. Nothing is ever uploaded anywhere.</span></li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="callout">
+      <b>Why this page is static.</b> The real dashboard reads your local session
+      files and runs your local <code>claude</code> CLI — that only works on your
+      own machine. There's no way to host that on the public internet without
+      also giving a public website control of your laptop, so it stays local by
+      design. This page is just the tour; clone the repo to run the real thing
+      against your own Claude Code history.
+    </div>
+    <pre>git clone https://github.com/reetbatra/claude-deck.git
+cd claude-deck
+node server.js --open</pre>
+  </section>
+
+  <footer>Built by Reet Batra. MIT licensed.</footer>
+</div>
+</body>
+</html>
