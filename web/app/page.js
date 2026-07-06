@@ -21,7 +21,7 @@ export default async function Home() {
         </p>
         <div className="cta-row">
           <SignInButton mode="modal">
-            <button className="btn btn-primary">Sign in with GitHub →</button>
+            <button className="btn btn-primary">Sign in →</button>
           </SignInButton>
           <a className="btn" href="https://github.com/reetbatra/claude-deck">
             View the local app on GitHub

@@ -13,7 +13,7 @@ export default function Topbar() {
         </Show>
         <Show when="signed-out">
           <SignInButton mode="modal">
-            <button className="btn btn-primary">Sign in with GitHub</button>
+            <button className="btn btn-primary">Sign in</button>
           </SignInButton>
         </Show>
       </nav>
