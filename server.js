@@ -30,6 +30,7 @@ const DATA_DIR = path.join(DECK_DIR, 'data');
 const RUNS_DIR = path.join(DATA_DIR, 'runs');
 const CACHE_FILE = path.join(DATA_DIR, 'session-cache.json');
 const AUTOMATIONS_FILE = path.join(DATA_DIR, 'automations.json');
+const CLOUD_FILE = path.join(DATA_DIR, 'cloud.json');
 
 const argv = process.argv.slice(2);
 const PORT = Number(argv[argv.indexOf('--port') + 1]) || 4747;
@@ -519,6 +520,62 @@ function narrativePrompt(report) {
     `Sessions today (${report.sessionCount} across ${report.projectCount} projects, ${report.prompts} prompts):\n${lines}`;
 }
 
+/* ---------------------------------------------------------------- cloud sync */
+// Aggregate-only: counts, project/skill names, timestamps. Never prompt
+// text, transcripts, or file contents — those stay on this machine.
+
+function loadCloudConfig() {
+  try { return JSON.parse(fs.readFileSync(CLOUD_FILE, 'utf8')); } catch { return null; }
+}
+function saveCloudConfig(cfg) {
+  fs.writeFileSync(CLOUD_FILE, JSON.stringify(cfg, null, 2));
+}
+
+async function buildSyncPayload(index) {
+  const today = new Date();
+  const days = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const ds = d.toLocaleDateString('en-CA');
+    const r = buildReport(index, ds);
+    if (r.sessionCount === 0) continue; // skip empty days, nothing to sync
+    days.push({
+      date: ds, sessionCount: r.sessionCount, projectCount: r.projectCount,
+      prompts: r.prompts, toolCalls: r.toolCalls, firstTs: r.firstTs, lastTs: r.lastTs,
+      projects: r.projects, skills: r.skills,
+    });
+  }
+
+  const usage = await computeSkillUsage(index);
+  const skillUsage = usage.used.map(s => ({ name: s.name, uses: s.uses, lastUsed: s.lastUsed }));
+
+  const sessions = index.slice(0, 100).map(s => ({
+    id: s.id, projectName: s.projectName, startTs: s.startTs, endTs: s.endTs,
+    userMsgs: s.userMsgs, toolCalls: s.toolCalls,
+  }));
+
+  return { days, skillUsage, sessions };
+}
+
+async function runSync() {
+  const cfg = loadCloudConfig();
+  if (!cfg || !cfg.token || !cfg.apiUrl) {
+    throw new Error('Not connected. Run: node server.js login <token> --api <url>');
+  }
+  const index = await getSessionIndex();
+  const payload = await buildSyncPayload(index);
+  const res = await fetch(`${cfg.apiUrl.replace(/\/$/, '')}/api/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${cfg.token}` },
+    body: JSON.stringify(payload),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `sync failed: HTTP ${res.status}`);
+  cfg.lastSyncedAt = Date.now();
+  saveCloudConfig(cfg);
+  return body;
+}
+
 /* ----------------------------------------------------------------- http utils */
 
 function sendJSON(res, code, obj) {
@@ -654,6 +711,22 @@ const server = http.createServer(async (req, res) => {
       if (proc && rec) { rec.status = 'stopped'; proc.kill('SIGTERM'); }
       return sendJSON(res, 200, { ok: true });
     }
+    if (p === '/api/cloud/status') {
+      const cfg = loadCloudConfig();
+      return sendJSON(res, 200, {
+        connected: !!(cfg && cfg.token),
+        apiUrl: cfg ? cfg.apiUrl : null,
+        lastSyncedAt: cfg ? cfg.lastSyncedAt : null,
+      });
+    }
+    if (p === '/api/cloud/sync' && req.method === 'POST') {
+      try {
+        const result = await runSync();
+        return sendJSON(res, 200, result);
+      } catch (e) {
+        return sendJSON(res, 400, { error: e.message });
+      }
+    }
 
     /* ---- static ---- */
     let filePath = p === '/' ? '/index.html' : p;
@@ -671,10 +744,48 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '127.0.0.1', () => {
-  const url = `http://localhost:${PORT}`;
-  console.log(`\n  Claude Deck running at ${url}\n  Reading sessions from ${PROJECTS_DIR}\n  claude binary: ${CLAUDE_BIN}\n`);
-  if (OPEN_BROWSER) spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
-  // warm the session index in the background so first page load is fast
-  getSessionIndex().then(ix => console.log(`  Indexed ${ix.length} sessions.\n`)).catch(() => {});
+/* ------------------------------------------------------------------- CLI */
+
+async function runCli() {
+  const [cmd, ...rest] = argv;
+
+  if (cmd === 'login') {
+    const token = rest[0];
+    const apiFlagIdx = rest.indexOf('--api');
+    const apiUrl = apiFlagIdx >= 0 ? rest[apiFlagIdx + 1] : null;
+    if (!token || !apiUrl) {
+      console.error('Usage: node server.js login <token> --api <https://your-deployment.vercel.app>');
+      process.exit(1);
+    }
+    saveCloudConfig({ token, apiUrl });
+    console.log(`Saved. Run "node server.js sync" any time to push your stats to ${apiUrl}.`);
+    process.exit(0);
+  }
+
+  if (cmd === 'sync') {
+    try {
+      const result = await runSync();
+      console.log(`Synced ${result.synced.days} day(s), ${result.synced.skills} skill(s), ${result.synced.sessions} session(s).`);
+      process.exit(0);
+    } catch (e) {
+      console.error('Sync failed:', e.message);
+      process.exit(1);
+    }
+  }
+
+  return false; // no CLI command matched — fall through to starting the server
+}
+
+runCli().then((handled) => {
+  if (handled === false) startServer();
 });
+
+function startServer() {
+  server.listen(PORT, '127.0.0.1', () => {
+    const url = `http://localhost:${PORT}`;
+    console.log(`\n  Claude Deck running at ${url}\n  Reading sessions from ${PROJECTS_DIR}\n  claude binary: ${CLAUDE_BIN}\n`);
+    if (OPEN_BROWSER) spawn('open', [url], { stdio: 'ignore', detached: true }).unref();
+    // warm the session index in the background so first page load is fast
+    getSessionIndex().then(ix => console.log(`  Indexed ${ix.length} sessions.\n`)).catch(() => {});
+  });
+}

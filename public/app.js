@@ -57,7 +57,7 @@ function show(view) {
   $$('.view').forEach(v => v.classList.add('hidden'));
   $('#view-' + view).classList.remove('hidden');
   $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-  if (view === 'today') loadToday();
+  if (view === 'today') { loadToday(); loadCloudPanel(); }
   if (view === 'automations') { renderAutomations(); refreshRuns(); }
   if (view === 'skills') { renderSkills(); loadUsage(); }
   if (view === 'sessions') loadSessions();
@@ -125,6 +125,30 @@ function renderActivityChart(series) {
 }
 
 $('#report-date').onchange = loadToday;
+
+async function loadCloudPanel() {
+  const s = await api('/api/cloud/status');
+  const el = $('#cloud-panel');
+  if (!s.connected) {
+    el.innerHTML = `<p class="muted small">Not connected. Sign in to Claude Deck Cloud, generate a token on the Connect page, then run
+      <code>node server.js login &lt;token&gt; --api &lt;url&gt;</code> here.</p>`;
+    return;
+  }
+  el.innerHTML = `
+    <p class="muted small">Connected to ${esc(s.apiUrl)}${s.lastSyncedAt ? ` — last synced ${fmtDateTime(s.lastSyncedAt)}` : ' — never synced'}.</p>
+    <button class="btn" id="btn-cloud-sync" style="margin-top:8px">Sync now</button>
+    <span id="cloud-sync-status" class="muted small" style="margin-left:8px"></span>`;
+  $('#btn-cloud-sync').onclick = async () => {
+    $('#cloud-sync-status').textContent = 'Syncing…';
+    try {
+      const r = await api('/api/cloud/sync', { method: 'POST' });
+      $('#cloud-sync-status').textContent = `Synced ${r.synced.days} day(s), ${r.synced.skills} skill(s), ${r.synced.sessions} session(s).`;
+      loadCloudPanel();
+    } catch (e) {
+      $('#cloud-sync-status').textContent = 'Sync failed: ' + e.message;
+    }
+  };
+}
 
 $('#btn-narrative').onclick = async () => {
   const { run } = await api('/api/run', {
@@ -441,5 +465,6 @@ $('#btn-back').onclick = () => show('sessions');
   state.automations = autos.automations;
   state.skills = skills.skills;
   loadToday();
+  loadCloudPanel();
   refreshRuns();
 })();
